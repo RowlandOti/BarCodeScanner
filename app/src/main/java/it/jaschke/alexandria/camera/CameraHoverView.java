@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -16,7 +17,7 @@ public class CameraHoverView extends View {
     private final String LOG_TAG = CameraHoverView.class.getSimpleName();
 
     private Paint mPaint;
-    private int mLeft, mTop, mRight, mBottom;
+    private Rect mRect;
 
     public CameraHoverView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -31,41 +32,15 @@ public class CameraHoverView extends View {
      * checking is performed, so the caller must ensure that left <= right and
      * top <= bottom.
      *
-     * @param left   The X coordinate of the left side of the rectangle
-     * @param top    The Y coordinate of the top of the rectangle
-     * @param right  The X coordinate of the right side of the rectangle
-     * @param bottom The Y coordinate of the bottom of the rectangle
+     * @param rect   The Rectangular coordinate of the HoverView
      */
-    public void update(int left, int top, int right, int bottom) {
-        mLeft = left;
-        mRight = right;
-        mTop = top;
-        mBottom = bottom;
+    public void update(Rect rect) {
+        mRect = rect;
         invalidate();
     }
 
-    public int getHoverRight() {
-        return mRight;
-    }
-
-    public int getHoverLeft() {
-        return mLeft;
-    }
-
-    public int getHoverTop() {
-        return mTop;
-    }
-
-    public int getHoverBottom() {
-        return mBottom;
-    }
-
-    public int getHoverWidth() {
-        return mRight - mLeft;
-    }
-
-    public int getHoverHeight() {
-        return mBottom - mTop;
+    public Rect getHoverRect() {
+        return mRect;
     }
 
     @Override
@@ -73,6 +48,6 @@ public class CameraHoverView extends View {
 
         super.onDraw(canvas);
 
-        canvas.drawRect(mLeft, mTop, mRight, mBottom, mPaint);
+        //canvas.drawRect(mRect, mPaint);
     }
 }

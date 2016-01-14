@@ -1,18 +1,20 @@
 package it.jaschke.alexandria.camera;
 
+import android.graphics.RectF;
 import android.hardware.Camera;
 
 /**
  * Created by Oti Rowland on 1/8/2016.
  */
-public class BitmapData {
+public class CameraPreviewData {
 
     private byte[] mBytes;
     private float mOrientation;
-    private Camera.Size mSize;
+    private Camera.Size mPreviewSize;
+    private RectF mCropRectF;
 
     // Default constructor
-    public BitmapData() {
+    public CameraPreviewData() {
     }
 
     public byte[] getBytes() {
@@ -32,10 +34,18 @@ public class BitmapData {
     }
 
     public Camera.Size getSize() {
-        return mSize;
+        return mPreviewSize;
     }
 
     public void setSize(Camera.Size size) {
-        this.mSize = size;
+        this.mPreviewSize = size;
+    }
+
+    public RectF getCropRectF() {
+        return mCropRectF;
+    }
+
+    public void setCropRectF(RectF cropRectF) {
+        this.mCropRectF = cropRectF;
     }
 }
