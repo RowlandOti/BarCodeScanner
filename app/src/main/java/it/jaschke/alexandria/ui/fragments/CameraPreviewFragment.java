@@ -2,14 +2,18 @@ package it.jaschke.alexandria.ui.fragments;
 
 
 import android.graphics.Bitmap;
-import android.graphics.Rect;
+import android.graphics.Matrix;
+import android.graphics.Point;
+import android.graphics.RectF;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -17,10 +21,11 @@ import android.widget.RelativeLayout;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import it.jaschke.alexandria.R;
-import it.jaschke.alexandria.camera.BeepManager;
 import it.jaschke.alexandria.camera.CameraHandlerThread;
 import it.jaschke.alexandria.camera.CameraHoverView;
 import it.jaschke.alexandria.camera.CameraPreviewSurfaceView;
+import it.jaschke.alexandria.managers.BeepManager;
+import it.jaschke.alexandria.utilities.CameraUtility;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -178,7 +183,7 @@ public class CameraPreviewFragment extends Fragment {
         return mPreviewSurface;
     }
 
-    public Rect getFramingRectInPreview() {
+    public RectF getBoundingFrameRect() {
 
         int previewWidth = getCameraPreviewSize().width;
         int previewHeight = getCameraPreviewSize().height;
@@ -186,8 +191,8 @@ public class CameraPreviewFragment extends Fragment {
         int[] location = new int[2];
         mHoverViewContainer.getLocationInWindow(location);
 
-        int cropLeft = location[0];
-        int cropTop = location[1];
+        int cropTopLeftX = location[0];
+        int cropTopLeftY = location[1];
 
         int cropWidth = mHoverViewContainer.getWidth();
         int cropHeight = mHoverViewContainer.getHeight();
@@ -195,20 +200,41 @@ public class CameraPreviewFragment extends Fragment {
         int containerWidth = mPreviewContainer.getWidth();
         int containerHeight = mPreviewContainer.getHeight();
 
-        int x = cropLeft * previewWidth / containerWidth;
-        int y = cropTop * previewHeight / containerHeight;
+        // Ratio for default camera state - Landscape mode
+        int ratioHeight = previewHeight / containerHeight;
+        int ratioWidth = previewWidth / containerWidth;
 
-        int width = cropWidth * previewWidth / containerWidth;
-        int height = cropHeight * previewHeight / containerHeight;
+        // Take care of Portrait mode
+        if (previewWidth > previewHeight) {
+            // Ratio changes for Portrait mode
+            ratioHeight = previewHeight / containerWidth;
+            ratioWidth = previewWidth / containerHeight;
+        }
 
-        Log.d(LOG_TAG, "CROPLEFT: " + cropLeft + " CROPRIGHT: " + cropTop);
-        Log.d(LOG_TAG, "WIDTH: " + width + " HEIGHT: " + height);
+        int scaledHeight = cropHeight * ratioHeight;
+        int scaledWidth = cropWidth * ratioWidth;
+
+        int scaledTopLeftX = cropTopLeftX * ratioWidth;
+        int scaledTopLeftY = cropTopLeftY * ratioHeight;
+
+        int scaledBottomRightX = scaledWidth + scaledTopLeftX;
+        int scaledBottomRightY = scaledHeight + scaledTopLeftY;
+
+        Log.d(LOG_TAG, "CROPTOPLEFTX: " + cropTopLeftX + " CROTOPLEFTY: " + cropTopLeftY);
+        Log.d(LOG_TAG, "WIDTH: " + scaledWidth + " HEIGHT: " + scaledHeight);
         Log.d(LOG_TAG, "PREVIEWWIDTH: " + previewWidth + " PREVIEWHEIGHT: " + previewHeight);
         Log.d(LOG_TAG, "CROPWIDTH: " + cropWidth + " CROPHEIGHT: " + cropHeight);
         Log.d(LOG_TAG, "CONTAINERWIDTH: " + containerWidth + " CONTAINERHEIGHT: " + containerHeight);
-        Log.d(LOG_TAG, "XWIDTH: " + x + " YHEIGHT: " + y);
+        Log.d(LOG_TAG, "XWIDTH: " + scaledTopLeftX + " YHEIGHT: " + scaledTopLeftY);
 
-       return new Rect(x, y, width + x, height + y);
+        RectF rect = new RectF(scaledTopLeftX, scaledTopLeftY, scaledBottomRightX, scaledBottomRightY);
+
+        Matrix m = new Matrix();
+        // Remember we rotated  the bitmap, so hover area too
+        m.setRotate(90, rect.centerX(), rect.centerY());
+        m.mapRect(rect);
+
+        return rect;
     }
 
     public void setResultImageBitmap(final Bitmap resultBitmap) {
@@ -220,6 +246,5 @@ public class CameraPreviewFragment extends Fragment {
                 mResultImage.setImageBitmap(resultBitmap);
             }
         });
-
     }
 }

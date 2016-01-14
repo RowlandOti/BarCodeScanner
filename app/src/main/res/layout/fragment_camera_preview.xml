@@ -77,7 +77,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
         android:gravity="center"
         android:orientation="horizontal">
 
@@ -85,7 +86,47 @@
             android:id="@+id/scan_frame_result_image"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:scaleType="fitXY"/>
+            android:scaleType="center"/>
     </LinearLayout>
+
+    <RadioGroup
+        android:id="@+id/capture_mode_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingBottom="20dp">
+
+        <RadioButton
+            android:id="@+id/capture_mode_qrcode"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@color/apptheme_transparent"
+            android:button="@null"
+            android:checked="true"
+            android:drawablePadding="5dp"
+            android:drawableTop="@drawable/qrcode_selector"
+            android:gravity="center"
+            android:text="QRcode"
+            android:textColor="@color/apptheme_white"
+            android:textSize="15sp"/>
+
+        <RadioButton
+            android:id="@+id/capture_mode_barcode"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@color/apptheme_transparent"
+            android:button="@null"
+            android:checked="false"
+            android:drawablePadding="5dp"
+            android:drawableTop="@drawable/barcode_selector"
+            android:gravity="center"
+            android:text="BARcode"
+            android:textColor="@color/apptheme_white"
+            android:textSize="15sp"/>
+    </RadioGroup>
+
 </RelativeLayout>

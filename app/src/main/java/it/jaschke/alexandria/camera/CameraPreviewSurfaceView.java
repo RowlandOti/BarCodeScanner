@@ -31,7 +31,6 @@ public class CameraPreviewSurfaceView extends SurfaceView implements SurfaceHold
     private Camera.AutoFocusCallback autoFocusCallback;
     private Camera mCamera;
     private Camera.Size mPreviewSize;
-
     private Camera.Size mPictureSize;
     private List<Camera.Size> mSupportedPreviewSizes;
     private List<Camera.Size> mSupportedPictureSizes;
@@ -112,7 +111,6 @@ public class CameraPreviewSurfaceView extends SurfaceView implements SurfaceHold
         try {
             // Acquire camera parameters
             Camera.Parameters parameters = mCamera.getParameters();
-
             // Take care of events such as rotation
             fixOrientation(parameters);
             // Set some camera parameters

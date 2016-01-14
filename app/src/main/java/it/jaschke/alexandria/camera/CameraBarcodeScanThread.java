@@ -1,30 +1,19 @@
 package it.jaschke.alexandria.camera;
 
 import android.graphics.Bitmap;
-import android.graphics.Matrix;
-import android.graphics.Rect;
 import android.hardware.Camera;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.MultiFormatReader;
 import com.google.zxing.PlanarYUVLuminanceSource;
-import com.google.zxing.RGBLuminanceSource;
-import com.google.zxing.ReaderException;
-import com.google.zxing.Result;
-import com.google.zxing.common.HybridBinarizer;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.Map;
 
+import it.jaschke.alexandria.decoders.InterfaceDecoder;
+import it.jaschke.alexandria.decoders.ZBarDecoder;
+import it.jaschke.alexandria.decoders.ZXingDecoder;
 import it.jaschke.alexandria.ui.fragments.CameraPreviewFragment;
 import it.jaschke.alexandria.utilities.BitmapUtility;
 import it.jaschke.alexandria.utilities.ScreenUtility;
@@ -34,24 +23,28 @@ import it.jaschke.alexandria.utilities.ScreenUtility;
  */
 public class CameraBarcodeScanThread extends HandlerThread {
 
+    // Class logging Identifier
+    private final String LOG_TAG = CameraBarcodeScanThread.class.getSimpleName();
+
     private static final int WHAT_CREATE_SCAN_RESULT_FROM_PREVIEW = 0;
     private static final int WHAT_CREATE_SCAN_FRAME_PREVIEW = 1;
     // The threading identifier
     private static String THREAD_TAG = "CameraBarcodeScanThread";
-    // Class logging Identifier
-    private final String LOG_TAG = CameraBarcodeScanThread.class.getSimpleName();
-    // The thread handler
-    private Handler mHandler = null;
     // Soft reference
     private WeakReference<CameraPreviewFragment> mWeakReferenceCameraPreviewFragment = null;
+    // Our decoders
+    private InterfaceDecoder mZXingDecoder;
+    private InterfaceDecoder mZBarDecoder;
+    // The thread handler
+    private Handler mHandler = null;
 
     // Default Constructor
     public CameraBarcodeScanThread(CameraPreviewFragment cameraPreviewFragment) {
         super(THREAD_TAG);
         // This is a call to begin the thread
         start();
-        mHandler = new Handler(getLooper());
         mWeakReferenceCameraPreviewFragment = new WeakReference<>(cameraPreviewFragment);
+        mHandler = new Handler(getLooper());
     }
 
     public void initializeScan() {
@@ -65,24 +58,37 @@ public class CameraBarcodeScanThread extends HandlerThread {
                     // Add to ThreadPool
                     ScanThreadPool.post(new Runnable() {
                         // POJO for preview data
-                        private BitmapData mBitmapData;
+                        private CameraPreviewData mBitmapData;
                         // The outcome of the decoding
-                        private Result result;
+                        private String zxingResult;
+                        private String zbarResult;
 
                         @Override
                         public void run() {
+                            mZBarDecoder = new ZBarDecoder(mBitmapData);
+                            mZXingDecoder = new ZXingDecoder(mBitmapData, new ZXingDecoder.InterfaceCommand() {
+                                @Override
+                                public void execute(PlanarYUVLuminanceSource source) {
+                                    queueCreateScanFramePreview(source);
+                                }
+                            });
                             // Decode Scan
-                            result = decodeWithZxing(mBitmapData.getBytes(), mBitmapData.getSize().width, mBitmapData.getSize().height);
-                            if (result != null) {
-                                Log.d(LOG_TAG, "CREATED_SCAN_RESULT" + result.getText());
+                            zbarResult = mZBarDecoder.decode();
+                            zxingResult = mZXingDecoder.decode();
+                            if (zxingResult != null) {
+                                Log.d(LOG_TAG, "CREATED_SCAN_RESULT_FROM_ZXING" + zxingResult);
+                            }
+
+                            if (zbarResult != null) {
+                                Log.d(LOG_TAG, "CREATED_SCAN_RESULT_FROM_ZBAR" + zbarResult);
                             }
                         }
 
-                        public Runnable init(BitmapData bitmapData) {
+                        public Runnable init(CameraPreviewData bitmapData) {
                             this.mBitmapData = bitmapData;
                             return this;
                         }
-                    }.init((BitmapData) msg.obj));
+                    }.init((CameraPreviewData) msg.obj));
                 } else if (msg.what == WHAT_CREATE_SCAN_FRAME_PREVIEW) {
                     // Add Runnable to ThreadPool
                     BitmapThreadPool.post(new Runnable() {
@@ -106,63 +112,9 @@ public class CameraBarcodeScanThread extends HandlerThread {
         });
     }
 
-    public Result decodeWithZxing(byte[] data, int width, int height) {
-
-        Rect crop = mWeakReferenceCameraPreviewFragment.get().getFramingRectInPreview();
-        // The MultiFormatReader used to decode
-        MultiFormatReader multiFormatReader = new MultiFormatReader();
-        multiFormatReader.setHints(createDecodeHints());
-
-        Result result = null;
-        PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(data, width, height,
-                crop.left, crop.top, crop.width(), crop.height(), false);
-
-        if (source != null) {
-            // Queue the scan preview
-            queueCreateScanFramePreview(source);
-
-            BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
-            try {
-                result = multiFormatReader.decodeWithState(binaryBitmap);
-                Log.d(LOG_TAG, "READER TRIED");
-            } catch (ReaderException re) {
-                // continue
-            } finally {
-                multiFormatReader.reset();
-            }
-        }
-        return result != null ? result : null;
-    }
-
-    public Result decodeWithZxing(Bitmap bitmap) {
-        MultiFormatReader multiFormatReader = new MultiFormatReader();
-        multiFormatReader.setHints(createDecodeHints());
-
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        int[] pixels = new int[width * height];
-        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-
-        Result result = null;
-        RGBLuminanceSource source = new RGBLuminanceSource(width, height, pixels);
-
-        if (source != null) {
-            BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
-            try {
-                result = multiFormatReader.decodeWithState(binaryBitmap);
-            } catch (ReaderException re) {
-                // continue
-            } finally {
-                multiFormatReader.reset();
-            }
-        }
-
-        return result != null ? result : null;
-    }
-
     public void queueCreateScanResultFromPreview(byte[] data, Camera camera) {
         // The POJO for bitmap data
-        BitmapData bitmapData = new BitmapData();
+        CameraPreviewData bitmapData = new CameraPreviewData();
         // Set the bitmap bytes array
         bitmapData.setBytes(data);
         // Acquire a CameraPreviewFragment reference
@@ -173,6 +125,8 @@ public class CameraBarcodeScanThread extends HandlerThread {
             bitmapData.setOrientation(cameraPreviewFragment.getOrientation());
             //Set the preview size used
             bitmapData.setSize(cameraPreviewFragment.getCameraPreviewSize());
+            // Set the rect scan area for cropping
+            bitmapData.setCropRectF(cameraPreviewFragment.getBoundingFrameRect());
             // Use Camera info to determine active camera
             Camera.CameraInfo camInfo = new Camera.CameraInfo();
             // Use Camera info to determine active camera
@@ -193,12 +147,12 @@ public class CameraBarcodeScanThread extends HandlerThread {
         int width = source.getThumbnailWidth();
         int height = source.getThumbnailHeight();
         Bitmap bitmap = Bitmap.createBitmap(pixels, 0, width, width, height, Bitmap.Config.RGB_565);
-        Bitmap rotated = null;
+        Bitmap rotated;
 
         // In portrait we have to rotate by 90 degrees for Bitmap to get match preview orientation
         if (ScreenUtility.isInPortraitOrientation(mWeakReferenceCameraPreviewFragment.get().getActivity())) {
             // Rotate it
-           rotated = BitmapUtility.rotateBitmap(bitmap, 90);
+            rotated = BitmapUtility.rotateBitmap(bitmap, 90);
             if (bitmap != rotated) {
                 //Rotation successful - Recycle if they aren't referencing the same Bitmap object.
                 bitmap.recycle();
@@ -215,16 +169,17 @@ public class CameraBarcodeScanThread extends HandlerThread {
         Log.d(LOG_TAG, "Added create scan frame preview to queue");
     }
 
-    private Map<DecodeHintType, Object> createDecodeHints() {
-        // Map object for hints
-        Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
-        Collection<BarcodeFormat> decodeFormats = new ArrayList<>();
-        // Use both BarCodes and QRCodes
-        decodeFormats.addAll(ScanFormatManager.getBarCodeFormats());
-        decodeFormats.addAll(ScanFormatManager.getQrCodeFormats());
-        // Map above to all possible formarts allowed
-        hints.put(DecodeHintType.POSSIBLE_FORMATS, decodeFormats);
+    @Override
+    public boolean quit() {
+        BitmapThreadPool.finish();
+        ScanThreadPool.finish();
+        return super.quit();
+    }
 
-        return hints;
+    @Override
+    public boolean quitSafely() {
+        BitmapThreadPool.finish();
+        ScanThreadPool.finish();
+        return super.quitSafely();
     }
 }
