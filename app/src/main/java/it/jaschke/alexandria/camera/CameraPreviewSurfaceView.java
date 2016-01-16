@@ -118,11 +118,13 @@ public class CameraPreviewSurfaceView extends SurfaceView implements SurfaceHold
             parameters.setPictureSize(mPictureSize.width, mPictureSize.height);
 
             requestLayout();
-            // Set the parameters on the camera and start the preview
-            mCamera.setParameters(parameters);
-            mCamera.setPreviewCallback(previewCallback);
-            mCamera.startPreview();
-            mCamera.autoFocus(autoFocusCallback);
+            if (mCamera != null) {
+                // Set the parameters on the camera and start the preview
+                mCamera.setParameters(parameters);
+                mCamera.setPreviewCallback(previewCallback);
+                mCamera.startPreview();
+                mCamera.autoFocus(autoFocusCallback);
+            }
         } catch (Exception exception) {
             Log.d(LOG_TAG, "Error starting camera preview: " + exception.getMessage());
         }
@@ -188,20 +190,20 @@ public class CameraPreviewSurfaceView extends SurfaceView implements SurfaceHold
 
     public void setFlash(Camera camera, boolean flag) {
         // Check for flash in Camera
-        if(CameraUtility.isFlashSupported(camera)) {
+        if (CameraUtility.isFlashSupported(camera)) {
             // Acquire Camera parameters
             Camera.Parameters parameters = camera.getParameters();
             // We want flash
-            if(flag) {
+            if (flag) {
                 // Already in torch mode
-                if(parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_TORCH)) {
+                if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_TORCH)) {
                     return;
                 }
                 // Set flash to torch mode
                 parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
             } else {
                 // Already out of flash mode
-                if(parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_OFF)) {
+                if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_OFF)) {
                     return;
                 }
                 // Set flash off

@@ -1,13 +1,7 @@
 package it.jaschke.alexandria.utilities;
 
-import android.graphics.Point;
 import android.hardware.Camera;
-import android.util.Log;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 
 /**

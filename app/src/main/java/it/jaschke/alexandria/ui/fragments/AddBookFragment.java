@@ -26,14 +26,15 @@ import it.jaschke.alexandria.R;
 import it.jaschke.alexandria.provider.AlexandriaContract;
 import it.jaschke.alexandria.services.BookService;
 import it.jaschke.alexandria.services.DownloadImage;
+import it.jaschke.alexandria.ui.activities.ScanActivity;
 import it.jaschke.alexandria.utilities.NetworkUtility;
 
 
 public class AddBookFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
-    private static final String TAG = "INTENT_TO_SCAN_ACTIVITY";
-    private static final String SCAN_FORMAT = "scanFormat";
-    private static final String SCAN_CONTENTS = "scanContents";
+    public static final String REQ_SCAN_RESULTS = "scanResults";
+    public static final int REQ_SCAN_CODE = 1;
+
     private final int LOADER_ID = 1;
     private final String EAN_CONTENT = "eanContent";
     // ButterKnife injected views
@@ -56,10 +57,6 @@ public class AddBookFragment extends Fragment implements LoaderManager.LoaderCal
     TextView mBookAuthorsTextView;
     @Bind(R.id.bookCategories)
     TextView mBookCategoriesTextView;
-
-    private String mScanFormat = "Format:";
-    private String mScanContents = "Contents:";
-
 
     public AddBookFragment() {
     }
@@ -126,12 +123,12 @@ public class AddBookFragment extends Fragment implements LoaderManager.LoaderCal
         mBookScanButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // This is the callback method that the system will invoke when your button is
-                CameraPreviewFragment previewFragment = new CameraPreviewFragment();
-                getActivity().getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, previewFragment)
-                        .addToBackStack(null)
-                        .commit();
+                // Create an Intent object
+                //Intent intent = new Intent(getActivity(), ScanActivity.class);
+                // Start the DetailActivity
+                //startActivity(intent);
+                Intent scanIntent = new Intent(getActivity(), ScanActivity.class);
+                startActivityForResult(scanIntent, REQ_SCAN_CODE);
             }
         });
 
@@ -232,5 +229,17 @@ public class AddBookFragment extends Fragment implements LoaderManager.LoaderCal
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         activity.setTitle(R.string.scan);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent dataIntent) {
+
+        super.onActivityResult(requestCode, resultCode, dataIntent);
+
+        // The sign up activity returned that the user has successfully created an account
+        if (requestCode == AddBookFragment.REQ_SCAN_CODE && resultCode == getActivity().RESULT_OK) {
+            String scanResult = dataIntent.getStringExtra(REQ_SCAN_RESULTS);
+            mBookNoEditText.setText(scanResult);
+        }
     }
 }

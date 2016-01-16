@@ -1,7 +1,6 @@
 package it.jaschke.alexandria.decoders;
 
 import android.graphics.Rect;
-import android.graphics.RectF;
 
 import net.sourceforge.zbar.Config;
 import net.sourceforge.zbar.Image;
@@ -16,21 +15,22 @@ import it.jaschke.alexandria.camera.CameraPreviewData;
  */
 public class ZBarDecoder implements InterfaceDecoder {
 
+    static {
+        System.loadLibrary("iconv");
+    }
+
     // Class logging Identifier
     private final String LOG_TAG = ZBarDecoder.class.getSimpleName();
-
+    // Command to execute in chain
+    InterfaceCommand mCommand;
     // A POJO for the necessary preview data
     private CameraPreviewData mCameraPreviewData;
     // ZBar scanner object
     private ImageScanner mImageScanner;
 
-
-    static {
-        System.loadLibrary("iconv");
-    }
-
-    public ZBarDecoder(CameraPreviewData mCameraPreviewData) {
+    public ZBarDecoder(CameraPreviewData mCameraPreviewData, InterfaceCommand command) {
         this.mCameraPreviewData = mCameraPreviewData;
+        this.mCommand = command;
         this.mImageScanner = new ImageScanner();
         createDecodeHints();
     }
@@ -45,15 +45,11 @@ public class ZBarDecoder implements InterfaceDecoder {
 
     public String decodeWithZbar(CameraPreviewData mBitmapData) {
 
-        RectF cropRectF = mBitmapData.getCropRectF();
+        Rect cropRect = mBitmapData.getRotatedBoundingRect(mBitmapData.getBoundingRectF());
 
         byte[] mBytes = mBitmapData.getBytes();
         int previewWidth = mBitmapData.getSize().width;
         int previewHeight = mBitmapData.getSize().height;
-
-        Rect cropRect = new Rect();
-        cropRectF.roundOut(cropRect);
-
 
         createDecodeHints();
 
@@ -74,11 +70,19 @@ public class ZBarDecoder implements InterfaceDecoder {
             }
         }
 
+        // Queue the scan preview
+        mCommand.execute();
+
         return resultStr;
     }
 
     private void createDecodeHints() {
         // Enable all modes for now
         mImageScanner.setConfig(Symbol.NONE, Config.ENABLE, 1);
+    }
+
+    public interface InterfaceCommand {
+
+        void execute();
     }
 }

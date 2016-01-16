@@ -1,7 +1,6 @@
 package it.jaschke.alexandria.decoders;
 
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.util.Log;
 
 import com.google.zxing.BarcodeFormat;
@@ -28,18 +27,16 @@ public class ZXingDecoder implements InterfaceDecoder {
 
     // Class logging Identifier
     private final String LOG_TAG = ZXingDecoder.class.getSimpleName();
-
-    // A POJO for the necessary preview data
-    private CameraPreviewData mCameraPreviewData;
-    // The MultiFormatReader used to decode
-    private MultiFormatReader multiFormatReader;
     // Command to execute in chain
     InterfaceCommand mCommand;
-
-    public interface InterfaceCommand {
-
-        void execute(PlanarYUVLuminanceSource source);
-    }
+    // A POJO for the necessary preview data
+    private CameraPreviewData mCameraPreviewData;
+    // YUV data source
+    private PlanarYUVLuminanceSource source;
+    // Bitmap type for ZXing
+    private BinaryBitmap binaryBitmap;
+    // The MultiFormatReader used to decode
+    private MultiFormatReader multiFormatReader;
 
     public ZXingDecoder(CameraPreviewData mCameraPreviewData, InterfaceCommand command) {
         this.mCameraPreviewData = mCameraPreviewData;
@@ -59,24 +56,19 @@ public class ZXingDecoder implements InterfaceDecoder {
 
     public String decodeWithZxing(CameraPreviewData mCameraPreviewData) {
 
-        RectF cropRectF = mCameraPreviewData.getCropRectF();
+        Rect cropRect = mCameraPreviewData.getRotatedBoundingRect(mCameraPreviewData.getBoundingRectF());
 
         byte[] mBytes = mCameraPreviewData.getBytes();
         int previewWidth = mCameraPreviewData.getSize().width;
         int previewHeight = mCameraPreviewData.getSize().height;
 
-        Rect cropRect = new Rect();
-        cropRectF.roundOut(cropRect);
-
         Result result = null;
-        PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(mBytes, previewWidth, previewHeight,
+        source = new PlanarYUVLuminanceSource(mBytes, previewWidth, previewHeight,
                 cropRect.left, cropRect.top, cropRect.width(), cropRect.height(), false);
 
         if (source != null) {
-            // Queue the scan preview
-            mCommand.execute(source);
 
-            BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
+            binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
             try {
                 result = multiFormatReader.decodeWithState(binaryBitmap);
                 Log.d(LOG_TAG, "READER TRIED");
@@ -85,6 +77,9 @@ public class ZXingDecoder implements InterfaceDecoder {
             } finally {
                 multiFormatReader.reset();
             }
+
+            // Queue the scan preview
+            mCommand.execute();
         }
         return result != null ? result.getText() : null;
     }
@@ -100,5 +95,10 @@ public class ZXingDecoder implements InterfaceDecoder {
         hints.put(DecodeHintType.POSSIBLE_FORMATS, decodeFormats);
 
         return hints;
+    }
+
+    public interface InterfaceCommand {
+
+        void execute();
     }
 }

@@ -3,7 +3,9 @@ package it.jaschke.alexandria.utilities;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
-import android.hardware.Camera;
+
+import java.io.ByteArrayOutputStream;
+
 
 /**
  * Created by Oti Rowland on 1/12/2016.
@@ -17,6 +19,28 @@ public class BitmapUtility {
         matrix.postRotate(degree);
         // return new bitmap rotated using matrix
         return Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), matrix, true);
+    }
+
+    public static Bitmap createBitmap(byte[] croppedBytes, int reqWidth, int reqHeight) {
+
+        Bitmap bitmap;
+
+
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+        options.inMutable = true;
+        options.inJustDecodeBounds = false;
+        options.inPreferredConfig = Bitmap.Config.RGB_565;
+
+        bitmap = BitmapFactory.decodeByteArray(croppedBytes, 0, croppedBytes.length, options);
+
+        return bitmap;
+    }
+
+    public static byte[] compressBitmapToBytes(Bitmap bitmap, int quality) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(65536);
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, baos);
+        return baos.toByteArray();
     }
 
     // decode Y, U, and V values on the YUV 420 buffer described as YCbCr_422_SP by Android

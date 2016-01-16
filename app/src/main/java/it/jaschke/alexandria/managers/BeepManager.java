@@ -33,12 +33,10 @@ import it.jaschke.alexandria.R;
 
 public class BeepManager implements MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener, Closeable {
 
-    // Class logging Identifier
-    private final String LOG_TAG = BeepManager.class.getSimpleName();
-
     private static final float BEEP_VOLUME = 0.10f;
     private static final long VIBRATE_DURATION = 200L;
-
+    // Class logging Identifier
+    private final String LOG_TAG = BeepManager.class.getSimpleName();
     private final Activity activity;
     private MediaPlayer mediaPlayer;
     private boolean playBeep;
@@ -48,6 +46,18 @@ public class BeepManager implements MediaPlayer.OnCompletionListener, MediaPlaye
         this.activity = activity;
         this.mediaPlayer = null;
         updatePrefs();
+    }
+
+    private static boolean shouldBeep(SharedPreferences prefs, Context activity) {
+        boolean shouldPlayBeep = true;
+        if (shouldPlayBeep) {
+            // See if sound settings overrides this
+            AudioManager audioService = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
+            if (audioService.getRingerMode() != AudioManager.RINGER_MODE_NORMAL) {
+                shouldPlayBeep = false;
+            }
+        }
+        return shouldPlayBeep;
     }
 
     private synchronized void updatePrefs() {
@@ -71,18 +81,6 @@ public class BeepManager implements MediaPlayer.OnCompletionListener, MediaPlaye
             Vibrator vibrator = (Vibrator) activity.getSystemService(Context.VIBRATOR_SERVICE);
             vibrator.vibrate(VIBRATE_DURATION);
         }
-    }
-
-    private static boolean shouldBeep(SharedPreferences prefs, Context activity) {
-        boolean shouldPlayBeep = true;
-        if (shouldPlayBeep) {
-            // See if sound settings overrides this
-            AudioManager audioService = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
-            if (audioService.getRingerMode() != AudioManager.RINGER_MODE_NORMAL) {
-                shouldPlayBeep = false;
-            }
-        }
-        return shouldPlayBeep;
     }
 
     private MediaPlayer buildMediaPlayer(Context activity) {

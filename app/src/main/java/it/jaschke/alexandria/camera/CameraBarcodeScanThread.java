@@ -1,20 +1,19 @@
 package it.jaschke.alexandria.camera;
 
 import android.graphics.Bitmap;
+import android.graphics.RectF;
 import android.hardware.Camera;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
-import com.google.zxing.PlanarYUVLuminanceSource;
-
 import java.lang.ref.WeakReference;
 
 import it.jaschke.alexandria.decoders.InterfaceDecoder;
 import it.jaschke.alexandria.decoders.ZBarDecoder;
-import it.jaschke.alexandria.decoders.ZXingDecoder;
-import it.jaschke.alexandria.ui.fragments.CameraPreviewFragment;
+import it.jaschke.alexandria.ui.activities.ScanActivity;
+import it.jaschke.alexandria.ui.fragments.ScanFragment;
 import it.jaschke.alexandria.utilities.BitmapUtility;
 import it.jaschke.alexandria.utilities.ScreenUtility;
 
@@ -23,27 +22,25 @@ import it.jaschke.alexandria.utilities.ScreenUtility;
  */
 public class CameraBarcodeScanThread extends HandlerThread {
 
-    // Class logging Identifier
-    private final String LOG_TAG = CameraBarcodeScanThread.class.getSimpleName();
-
-    private static final int WHAT_CREATE_SCAN_RESULT_FROM_PREVIEW = 0;
-    private static final int WHAT_CREATE_SCAN_FRAME_PREVIEW = 1;
+    private static final int WHAT_CREATE_SCAN_RESULT = 0;
+    private static final int WHAT_CREATE_SCAN_PREVIEW = 1;
     // The threading identifier
     private static String THREAD_TAG = "CameraBarcodeScanThread";
+    // Class logging Identifier
+    private final String LOG_TAG = CameraBarcodeScanThread.class.getSimpleName();
     // Soft reference
-    private WeakReference<CameraPreviewFragment> mWeakReferenceCameraPreviewFragment = null;
+    private WeakReference<ScanFragment> mWeakReferenceCameraPreviewFragment = null;
     // Our decoders
-    private InterfaceDecoder mZXingDecoder;
-    private InterfaceDecoder mZBarDecoder;
+    private InterfaceDecoder mZBarDecoder = null;
     // The thread handler
     private Handler mHandler = null;
 
     // Default Constructor
-    public CameraBarcodeScanThread(CameraPreviewFragment cameraPreviewFragment) {
+    public CameraBarcodeScanThread(ScanFragment scanFragment) {
         super(THREAD_TAG);
         // This is a call to begin the thread
         start();
-        mWeakReferenceCameraPreviewFragment = new WeakReference<>(cameraPreviewFragment);
+        mWeakReferenceCameraPreviewFragment = new WeakReference<>(scanFragment);
         mHandler = new Handler(getLooper());
     }
 
@@ -54,33 +51,34 @@ public class CameraBarcodeScanThread extends HandlerThread {
             @Override
             public boolean handleMessage(Message msg) {
 
-                if (msg.what == WHAT_CREATE_SCAN_RESULT_FROM_PREVIEW) {
+                if (msg.what == WHAT_CREATE_SCAN_RESULT) {
                     // Add to ThreadPool
                     ScanThreadPool.post(new Runnable() {
                         // POJO for preview data
                         private CameraPreviewData mBitmapData;
-                        // The outcome of the decoding
+                        // The outcomes of the decoding
                         private String zxingResult;
                         private String zbarResult;
 
                         @Override
                         public void run() {
-                            mZBarDecoder = new ZBarDecoder(mBitmapData);
-                            mZXingDecoder = new ZXingDecoder(mBitmapData, new ZXingDecoder.InterfaceCommand() {
+
+                            mZBarDecoder = new ZBarDecoder(mBitmapData, new ZBarDecoder.InterfaceCommand() {
                                 @Override
-                                public void execute(PlanarYUVLuminanceSource source) {
-                                    queueCreateScanFramePreview(source);
+                                public void execute() {
+                                    queueCreateScanPreview(mBitmapData);
                                 }
                             });
-                            // Decode Scan
+                            // Decode using ZBar
                             zbarResult = mZBarDecoder.decode();
-                            zxingResult = mZXingDecoder.decode();
-                            if (zxingResult != null) {
-                                Log.d(LOG_TAG, "CREATED_SCAN_RESULT_FROM_ZXING" + zxingResult);
-                            }
-
                             if (zbarResult != null) {
-                                Log.d(LOG_TAG, "CREATED_SCAN_RESULT_FROM_ZBAR" + zbarResult);
+                                // Check which instance we are dealing with
+                                if (mWeakReferenceCameraPreviewFragment.get().getActivity() instanceof ScanActivity) {
+                                    // Trigger callback
+                                    ((ScanActivity) mWeakReferenceCameraPreviewFragment.get().getActivity()).onScanComplete(zbarResult);
+                                }
+
+                                Log.d(LOG_TAG, "CREATED_SCAN_RESULT_FROM_ZBAR: " + zbarResult);
                             }
                         }
 
@@ -89,7 +87,7 @@ public class CameraBarcodeScanThread extends HandlerThread {
                             return this;
                         }
                     }.init((CameraPreviewData) msg.obj));
-                } else if (msg.what == WHAT_CREATE_SCAN_FRAME_PREVIEW) {
+                } else if (msg.what == WHAT_CREATE_SCAN_PREVIEW) {
                     // Add Runnable to ThreadPool
                     BitmapThreadPool.post(new Runnable() {
                         // Bitmap object
@@ -112,47 +110,52 @@ public class CameraBarcodeScanThread extends HandlerThread {
         });
     }
 
-    public void queueCreateScanResultFromPreview(byte[] data, Camera camera) {
+    public void queueCreateScanResult(byte[] data, Camera camera) {
         // The POJO for bitmap data
         CameraPreviewData bitmapData = new CameraPreviewData();
         // Set the bitmap bytes array
         bitmapData.setBytes(data);
-        // Acquire a CameraPreviewFragment reference
-        CameraPreviewFragment cameraPreviewFragment = mWeakReferenceCameraPreviewFragment.get();
+        // Acquire a ScanFragment reference
+        ScanFragment scanFragment = mWeakReferenceCameraPreviewFragment.get();
         // Simple null check
-        if (cameraPreviewFragment != null) {
+        if (scanFragment != null) {
             // set default mOrientation, assuming back facing camera
-            bitmapData.setOrientation(cameraPreviewFragment.getOrientation());
+            bitmapData.setOrientation(scanFragment.getOrientation());
             //Set the preview size used
-            bitmapData.setSize(cameraPreviewFragment.getCameraPreviewSize());
+            bitmapData.setSize(scanFragment.getCameraPreviewSize());
             // Set the rect scan area for cropping
-            bitmapData.setCropRectF(cameraPreviewFragment.getBoundingFrameRect());
+            bitmapData.setBoundingRectF(scanFragment.getBoundingFrameRect());
             // Use Camera info to determine active camera
             Camera.CameraInfo camInfo = new Camera.CameraInfo();
             // Use Camera info to determine active camera
-            camera.getCameraInfo(cameraPreviewFragment.getCameraCurrentlyLocked(), camInfo);
+            camera.getCameraInfo(scanFragment.getCameraCurrentlyLocked(), camInfo);
             // Determine Camera in use
             if (camInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                bitmapData.setOrientation(cameraPreviewFragment.getOrientation() * -1);
+                bitmapData.setOrientation(scanFragment.getOrientation() * -1);
             }
         }
-        mHandler.obtainMessage(WHAT_CREATE_SCAN_RESULT_FROM_PREVIEW, bitmapData).sendToTarget();
+        mHandler.obtainMessage(WHAT_CREATE_SCAN_RESULT, bitmapData).sendToTarget();
 
         Log.d(LOG_TAG, "Added create scan results to queue");
     }
 
-    public void queueCreateScanFramePreview(PlanarYUVLuminanceSource source) {
+    public void queueCreateScanPreview(CameraPreviewData cameraPreviewData) {
 
-        int[] pixels = source.renderThumbnail();
-        int width = source.getThumbnailWidth();
-        int height = source.getThumbnailHeight();
-        Bitmap bitmap = Bitmap.createBitmap(pixels, 0, width, width, height, Bitmap.Config.RGB_565);
+        byte[] nCroppedBytes = cameraPreviewData.getCroppedBytes(cameraPreviewData.getBoundingRectF());
+        RectF rectF = cameraPreviewData.getBoundingRectF();
+
+        int reqWidth = cameraPreviewData.getBoundingRect(rectF).width() / 2;
+        int reqHeight = cameraPreviewData.getBoundingRect(rectF).height() / 2;
+
+        Bitmap bitmap = BitmapUtility.createBitmap(nCroppedBytes, reqWidth, reqHeight);
+
         Bitmap rotated;
 
         // In portrait we have to rotate by 90 degrees for Bitmap to get match preview orientation
         if (ScreenUtility.isInPortraitOrientation(mWeakReferenceCameraPreviewFragment.get().getActivity())) {
             // Rotate it
             rotated = BitmapUtility.rotateBitmap(bitmap, 90);
+            // Check identity
             if (bitmap != rotated) {
                 //Rotation successful - Recycle if they aren't referencing the same Bitmap object.
                 bitmap.recycle();
@@ -164,22 +167,19 @@ public class CameraBarcodeScanThread extends HandlerThread {
             rotated = bitmap;
         }
 
-        mHandler.obtainMessage(WHAT_CREATE_SCAN_FRAME_PREVIEW, rotated).sendToTarget();
+        mHandler.obtainMessage(WHAT_CREATE_SCAN_PREVIEW, rotated).sendToTarget();
 
         Log.d(LOG_TAG, "Added create scan frame preview to queue");
     }
 
     @Override
-    public boolean quit() {
-        BitmapThreadPool.finish();
-        ScanThreadPool.finish();
-        return super.quit();
-    }
-
-    @Override
     public boolean quitSafely() {
-        BitmapThreadPool.finish();
-        ScanThreadPool.finish();
+        //BitmapThreadPool.finish();
+        //ScanThreadPool.finish();
+
+        if (mZBarDecoder != null) {
+            mZBarDecoder = null;
+        }
         return super.quitSafely();
     }
 }

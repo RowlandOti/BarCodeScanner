@@ -12,7 +12,6 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -22,8 +21,8 @@ import it.jaschke.alexandria.R;
 import it.jaschke.alexandria.api.Callback;
 import it.jaschke.alexandria.ui.fragments.AboutFragment;
 import it.jaschke.alexandria.ui.fragments.AddBookFragment;
-import it.jaschke.alexandria.ui.fragments.BookDetailFragment;
-import it.jaschke.alexandria.ui.fragments.ListOfBooksFragment;
+import it.jaschke.alexandria.ui.fragments.BooksFragment;
+import it.jaschke.alexandria.ui.fragments.DetailFragment;
 import it.jaschke.alexandria.ui.fragments.NavigationDrawerFragment;
 
 
@@ -56,13 +55,11 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
         IntentFilter filter = new IntentFilter(MESSAGE_EVENT);
         LocalBroadcastManager.getInstance(this).registerReceiver(messageReciever, filter);
 
-        navigationDrawerFragment = (NavigationDrawerFragment)
-                getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
+        navigationDrawerFragment = (NavigationDrawerFragment) getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
         title = getTitle();
 
         // Set up the drawer.
-        navigationDrawerFragment.setUp(R.id.navigation_drawer,
-                (DrawerLayout) findViewById(R.id.drawer_layout));
+        navigationDrawerFragment.setUp(R.id.navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout));
     }
 
     @Override
@@ -74,7 +71,7 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
         switch (position) {
             default:
             case 0:
-                nextFragment = new ListOfBooksFragment();
+                nextFragment = new BooksFragment();
                 break;
             case 1:
                 nextFragment = new AddBookFragment();
@@ -86,7 +83,7 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
         }
 
         fragmentManager.beginTransaction()
-                .replace(R.id.container, nextFragment)
+                .replace(R.id.fragment_container, nextFragment)
                 .addToBackStack((String) title)
                 .commit();
     }
@@ -140,12 +137,12 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
     @Override
     public void onItemSelected(String ean) {
         Bundle args = new Bundle();
-        args.putString(BookDetailFragment.EAN_KEY, ean);
+        args.putString(DetailFragment.EAN_KEY, ean);
 
-        BookDetailFragment fragment = new BookDetailFragment();
+        DetailFragment fragment = new DetailFragment();
         fragment.setArguments(args);
 
-        int id = R.id.container;
+        int id = R.id.fragment_container;
         if (findViewById(R.id.right_container) != null) {
             id = R.id.right_container;
         }

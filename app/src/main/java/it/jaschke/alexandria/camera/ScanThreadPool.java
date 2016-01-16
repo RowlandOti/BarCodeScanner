@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Ali Muzaffar on 2/01/2016.
- *
+ * <p/>
  * Modified by Oti Rowland on 1/8/2016.
  */
 public class ScanThreadPool {

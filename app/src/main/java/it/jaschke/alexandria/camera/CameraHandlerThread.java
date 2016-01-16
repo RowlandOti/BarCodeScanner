@@ -7,34 +7,35 @@ import android.util.Log;
 
 import java.lang.ref.WeakReference;
 
-import it.jaschke.alexandria.ui.fragments.CameraPreviewFragment;
+import it.jaschke.alexandria.ui.fragments.ScanFragment;
 
 /**
  * Created by Oti Rowland on 1/8/2016.
  */
 public class CameraHandlerThread extends HandlerThread implements Camera.AutoFocusCallback, Camera.PreviewCallback {
 
-    // Class logging Identifier
-    private final String LOG_TAG = CameraHandlerThread.class.getSimpleName();
     // The threading identifier
     private static String THREAD_TAG = "CameraHandlerThread";
+    // Class logging Identifier
+    private final String LOG_TAG = CameraHandlerThread.class.getSimpleName();
     // The thread handler
     private Handler mHandler = null;
     // Soft reference
-    private WeakReference<CameraPreviewFragment> mWeakReferenceCameraPreviewFragment = null;
+    private WeakReference<ScanFragment> mWeakReferenceCameraPreviewFragment = null;
     // The Barcode scanner thread
-    private CameraBarcodeScanThread mCameraBarCodeScannerThread;
+    private CameraBarcodeScanThread mCameraBarCodeScannerThread = null;
 
     // Default constructor
-    public CameraHandlerThread(CameraPreviewFragment cameraPreviewFragment) {
+    public CameraHandlerThread(ScanFragment scanFragment) {
         super(THREAD_TAG);
         // This is a call to begin the thread
         start();
         mHandler = new Handler(getLooper());
-        mWeakReferenceCameraPreviewFragment = new WeakReference<>(cameraPreviewFragment);
-        cameraPreviewFragment.getPreviewSurface().setPreviewCallback(this);
-        cameraPreviewFragment.getPreviewSurface().setAutoFocusCallback(this);
+        mWeakReferenceCameraPreviewFragment = new WeakReference<>(scanFragment);
+        mWeakReferenceCameraPreviewFragment.get().getPreviewSurface().setPreviewCallback(this);
+        mWeakReferenceCameraPreviewFragment.get().getPreviewSurface().setAutoFocusCallback(this);
     }
+
 
     @Override
     public void onAutoFocus(boolean success, Camera camera) {
@@ -43,17 +44,15 @@ public class CameraHandlerThread extends HandlerThread implements Camera.AutoFoc
 
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-        // Acquire the containing fragment instance
-        CameraPreviewFragment cameraPreviewFragment = mWeakReferenceCameraPreviewFragment.get();
         //
-        if (cameraPreviewFragment != null) {
+        if (mWeakReferenceCameraPreviewFragment.get() != null) {
             // We might need a scanner thread
             if (mCameraBarCodeScannerThread == null) {
-                mCameraBarCodeScannerThread = new CameraBarcodeScanThread(cameraPreviewFragment);
+                mCameraBarCodeScannerThread = new CameraBarcodeScanThread(mWeakReferenceCameraPreviewFragment.get());
                 // Begin the scanning
                 mCameraBarCodeScannerThread.initializeScan();
             }
-            mCameraBarCodeScannerThread.queueCreateScanResultFromPreview(data, camera);
+            mCameraBarCodeScannerThread.queueCreateScanResult(data, camera);
         }
 
         Log.d(LOG_TAG, "onPreviewFrame Called");
@@ -78,5 +77,14 @@ public class CameraHandlerThread extends HandlerThread implements Camera.AutoFoc
         } catch (InterruptedException e) {
             Log.w(LOG_TAG, "wait was interrupted");
         }
+    }
+
+    @Override
+    public boolean quitSafely() {
+        if (mCameraBarCodeScannerThread != null) {
+            mCameraBarCodeScannerThread.quitSafely();
+            mCameraBarCodeScannerThread = null;
+        }
+        return super.quitSafely();
     }
 }
