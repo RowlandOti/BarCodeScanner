@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:tag="PREFERENCE_TAG">
+
+    <ListPreference
+        android:entries="@array/pref_start_options"
+        android:entryValues="@array/pref_start_values"
+        android:key="pref_startFragment"
+        android:title="@string/pref_startScreen" />
+
+</PreferenceScreen>

@@ -1,0 +1,55 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="it.jaschke.alexandria.ListOfBooks">
+
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_gravity="center_horizontal|top"
+        android:orientation="vertical">
+
+        <ImageButton
+            android:id="@+id/searchButton"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="5dp"
+            android:contentDescription="@string/search"
+            android:src="@drawable/ic_action_search" />
+
+        <EditText
+            android:id="@+id/searchText"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:layout_toLeftOf="@+id/searchButton"
+            android:layout_toStartOf="@+id/searchButton"
+            android:inputType="text"
+            android:saveEnabled="true" />
+
+
+        <ListView
+            android:id="@+id/listOfBooks"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignRight="@id/searchButton"
+            android:layout_below="@+id/searchText"
+            android:layout_marginLeft="0dp"
+            android:layout_toRightOf="@id/searchButton" />
+
+
+    </RelativeLayout>
+
+</FrameLayout>
