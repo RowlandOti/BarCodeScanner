@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="it.jaschke.alexandria">
+    package="com.rowland.scanner">
 
     <!-- Network Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -39,7 +39,7 @@
 
         <provider
             android:name=".provider.BookProvider"
-            android:authorities="it.jaschke.alexandria"
+            android:authorities="com.rowland.scanner"
             android:exported="false" />
 
         <service
@@ -55,7 +55,7 @@
             android:theme="@style/AppTheme.NoActionBar.Transparent">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="it.jaschke.alexandria.ui.activities.MainActivity" />
+                android:value=".ui.activities.MainActivity" />
         </activity>
     </application>
 

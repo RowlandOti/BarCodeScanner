@@ -22,7 +22,7 @@
          the container. -->
     <fragment
         android:id="@+id/navigation_drawer"
-        android:name="it.jaschke.alexandria.ui.fragments.NavigationDrawerFragment"
+        android:name="it.jaschke.scanner.ui.fragments.NavigationDrawerFragment"
         android:layout_width="@dimen/navigation_drawer_width"
         android:layout_height="match_parent"
         android:layout_gravity="start"

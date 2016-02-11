@@ -1,17 +1,14 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/preview_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".ui.fragments.ScanFragment">
+    android:layout_height="match_parent">
 
-    <it.jaschke.alexandria.camera.CameraPreviewSurfaceView
+    <com.rowland.scanner.camera.CameraPreviewSurfaceView
         android:id="@+id/camera_preview_surfaceview"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-
-    <it.jaschke.alexandria.camera.CameraHoverView
+    <com.rowland.scanner.camera.CameraHoverView
         android:id="@+id/camera_hover_view_container"
         android:layout_width="@dimen/barcode_crop_width"
         android:layout_height="@dimen/barcode_crop_height"
@@ -23,7 +20,7 @@
             android:layout_height="match_parent"
             android:scaleType="fitXY" />
 
-    </it.jaschke.alexandria.camera.CameraHoverView>
+    </com.rowland.scanner.camera.CameraHoverView>
 
 
     <ImageView

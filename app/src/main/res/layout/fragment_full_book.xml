@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="it.jaschke.alexandria.ui.fragments.AddBookFragment">
+    tools:context="it.jaschke.scanner.ui.fragments.AddBookFragment">
 
     <LinearLayout
         android:layout_width="fill_parent"
@@ -92,7 +92,7 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <ImageButton
+                <!--<ImageButton
                     android:id="@+id/backButton"
                     style="?android:attr/buttonBarButtonStyle"
                     android:layout_width="wrap_content"
@@ -103,7 +103,7 @@
                     android:layout_gravity="right|top"
                     android:contentDescription="@string/back_button"
                     android:onClick="goBack"
-                    android:src="@drawable/ic_action_undo" />
+                    android:src="@drawable/ic_action_undo" />-->
 
 
             </RelativeLayout>
